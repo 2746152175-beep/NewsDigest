@@ -4,7 +4,7 @@ import argparse
 import json
 import logging
 from dataclasses import asdict
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -41,7 +41,20 @@ def _published_sort_key(item: dict) -> str:
     return value if isinstance(value, str) else ""
 
 
-def run_fetch(config: dict, date_str: str) -> int:
+def _published_on(published_at: str, date_str: str, tz) -> bool:
+    """Return True if published_at falls on date_str in the given timezone."""
+    if not published_at:
+        return False
+    try:
+        dt = datetime.fromisoformat(published_at)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.astimezone(tz).date().isoformat() == date_str
+    except ValueError:
+        return published_at[:10] == date_str
+
+
+def run_fetch(config: dict, date_str: str, tz) -> int:
     """R0: fetch -> normalize -> dedup -> write the daily raw JSON file."""
     sources = load_sources()
     raw_dir = resolve_path((config.get("data") or {}).get("raw_dir") or "data/raw")
@@ -71,6 +84,7 @@ def run_fetch(config: dict, date_str: str) -> int:
     seen_db = SeenDB(db_path)
     kept_items = []
     skipped = 0
+    filtered_out = 0
     try:
         for raw in raw_items:
             try:
@@ -81,6 +95,9 @@ def run_fetch(config: dict, date_str: str) -> int:
                 )
             except Exception as exc:
                 logger.warning("normalize failed for %s: %s", raw.get("url"), exc)
+                continue
+            if not _published_on(item.published_at, date_str, tz):
+                filtered_out += 1
                 continue
             if seen_db.is_new(item):
                 kept_items.append(item)
@@ -115,6 +132,7 @@ def run_fetch(config: dict, date_str: str) -> int:
     print(f"[R0] per-source fetched: {source_stats}")
     print(f"[R0] kept (new): {len(kept_items)}")
     print(f"[R0] skipped (duplicates): {skipped}")
+    print(f"[R0] date-filtered out (not published on {date_str}): {filtered_out}")
     print(f"[R0] max_items: {max_items}")
     print(f"[R0] selected (after limit): {len(payload)}")
     print(f"[R0] output: {out_path}")
@@ -167,7 +185,7 @@ def cleanup_data(config: dict) -> None:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="R4: run the full news pipeline")
-    parser.add_argument("--date", default=None, help="YYYY-MM-DD, defaults to today (Asia/Shanghai)")
+    parser.add_argument("--date", default=None, help="YYYY-MM-DD, defaults to yesterday (Asia/Shanghai)")
     args = parser.parse_args(argv)
 
     config = load_config()
@@ -175,12 +193,12 @@ def main(argv: list[str] | None = None) -> int:
 
     timezone_name = (config.get("project") or {}).get("timezone") or "Asia/Shanghai"
     tz = ZoneInfo(timezone_name)
-    date_str = args.date or datetime.now(tz).date().isoformat()
+    date_str = args.date or (datetime.now(tz) - timedelta(days=1)).date().isoformat()
     logger.info("R4 pipeline start for %s", date_str)
     print(f"R4 pipeline date: {date_str}")
 
     try:
-        r0_code = run_fetch(config, date_str)
+        r0_code = run_fetch(config, date_str, tz)
     except Exception:
         logger.exception("R0 crashed with an unexpected exception")
         print("[R0] ERROR: unhandled exception, see log for details")

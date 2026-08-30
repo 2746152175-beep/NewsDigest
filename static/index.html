@@ -514,7 +514,9 @@
 
     document.addEventListener('DOMContentLoaded', () => {
       const dateInput = document.getElementById('date');
-      dateInput.value = formatDate(new Date());
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      dateInput.value = formatDate(yesterday);
       loadSettings();
       loadNews(dateInput.value);
     });
