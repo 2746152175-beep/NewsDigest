@@ -13,6 +13,7 @@ from src.config_loader import load_config, resolve_path
 from src.web import settings as web_settings
 from src.web.runner import runner
 from src.write.favorites import build_favorite_index, find_note_by_id, load_favorites, set_favorite, set_note_starred
+from src.write.obsidian import list_note_dates, load_notes_by_date
 
 INDEX_PATH = Path(__file__).resolve().parent.parent.parent / "static" / "index.html"
 
@@ -71,14 +72,16 @@ def news(date: str) -> list:
         (config.get("data") or {}).get("summarized_dir") or "data/summarized"
     )
     path = summarized_dir / f"{date}.json"
-    if not path.exists():
-        return []
-    try:
-        payload = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, ValueError) as exc:
-        raise HTTPException(status_code=500, detail="summarized file is invalid") from exc
-    if not isinstance(payload, list):
-        raise HTTPException(status_code=500, detail="summarized file is not a list")
+    payload: list = []
+    if path.exists():
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            data = []
+        if isinstance(data, list):
+            payload = data
+    if not payload:
+        payload = load_notes_by_date(config, date)
     favorites = load_favorites(config)
     for it in payload:
         if isinstance(it, dict):
@@ -103,6 +106,13 @@ def dates() -> list[str]:
                 continue
             if d < earliest:
                 earliest = d
+    for d_str in list_note_dates(config):
+        try:
+            d = datetime.strptime(d_str, "%Y-%m-%d").date()
+        except ValueError:
+            continue
+        if d < earliest:
+            earliest = d
     return [(today - timedelta(days=i)).isoformat() for i in range((today - earliest).days + 1)]
 
 
