@@ -9,7 +9,7 @@ _ILLEGAL_CHARS = re.compile(r'[\\/:*?"<>|]')
 _WHITESPACE = re.compile(r"\s+")
 _DATE_RE = re.compile(r"(\d{4}-\d{2}-\d{2})")
 
-MAX_TITLE_LEN = 60
+MAX_TITLE_LEN = 30
 
 
 def clean_title(title: str) -> str:
@@ -18,8 +18,8 @@ def clean_title(title: str) -> str:
     text = _ILLEGAL_CHARS.sub("-", text)
     text = _WHITESPACE.sub(" ", text).strip()
     if len(text) > MAX_TITLE_LEN:
-        text = text[:MAX_TITLE_LEN].rstrip(" -")
-    return text
+        text = text[:MAX_TITLE_LEN]
+    return text.rstrip(" -。，！？：；、,.!?:;")
 
 
 def extract_published(published_at: str | None, fallback: str) -> str:
@@ -110,7 +110,8 @@ def build_note(item: dict, published: str) -> str:
 
 
 def base_filename(item: dict, published: str) -> str:
-    return f"{published} {clean_title(item.get('title'))}"
+    text = item.get("summary") or item.get("title")
+    return f"{published} {clean_title(text)}"
 
 
 def assign_filenames(items: list[dict], published_by_id: dict[str, str]) -> dict[str, str]:
