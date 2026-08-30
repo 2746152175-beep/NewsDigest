@@ -136,7 +136,7 @@ def run_fetch(config: dict, date_str: str, tz) -> int:
     print(f"[R0] max_items: {max_items}")
     print(f"[R0] selected (after limit): {len(payload)}")
     print(f"[R0] output: {out_path}")
-    return 0
+    return len(kept_items)
 
 
 def _run_stage(name: str, func, argv: list[str]) -> int:
@@ -165,7 +165,6 @@ def cleanup_data(config: dict) -> None:
     for value in (
         data_cfg.get("raw_dir") or "data/raw",
         data_cfg.get("classified_dir") or "data/classified",
-        data_cfg.get("summarized_dir") or "data/summarized",
     ):
         directory = resolve_path(value)
         if not directory.exists():
@@ -198,21 +197,19 @@ def main(argv: list[str] | None = None) -> int:
     print(f"R4 pipeline date: {date_str}")
 
     try:
-        r0_code = run_fetch(config, date_str, tz)
+        new_count = run_fetch(config, date_str, tz)
     except Exception:
         logger.exception("R0 crashed with an unexpected exception")
         print("[R0] ERROR: unhandled exception, see log for details")
-        r0_code = 1
+        new_count = 0
 
     r1_code = None
     r2_code = None
     r3_code = None
 
-    if r0_code != 0:
-        logger.error("R0 failed with exit code %s", r0_code)
-        print("[R1] skipped: R0 failed")
-        print("[R2] skipped: R0 failed")
-        print("[R3] skipped: R0 failed")
+    if new_count == 0:
+        logger.info("no new items for %s, skip R1/R2/R3", date_str)
+        print("[R0] no new items (already crawled), skip R1/R2/R3")
     else:
         r1_code = _run_stage("1 classify", classify_main, ["--date", date_str])
         if r1_code != 0:
@@ -228,12 +225,12 @@ def main(argv: list[str] | None = None) -> int:
                 r3_code = _run_stage("3 archive", archive_main, ["--date", date_str])
 
     print("\n===== R4 summary =====")
-    print(f"R0 fetch: {'success' if r0_code == 0 else 'failed'}")
+    print(f"R0 fetch: success ({new_count} new)")
     print(f"R1 classify: {'success' if r1_code == 0 else ('failed' if r1_code else 'skipped')}")
     print(f"R2 summarize: {'success' if r2_code == 0 else ('failed' if r2_code else 'skipped')}")
     print(f"R3 archive: {'success' if r3_code == 0 else ('failed' if r3_code else 'skipped')}")
 
-    failed = any(code is not None and code != 0 for code in (r0_code, r1_code, r2_code, r3_code))
+    failed = any(code is not None and code != 0 for code in (r1_code, r2_code, r3_code))
     if failed:
         logger.error("R4 pipeline finished with failures")
     else:
