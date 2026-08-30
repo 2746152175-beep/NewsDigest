@@ -1,0 +1,16 @@
+# R0 采集
+feedparser>=6.0.11
+httpx>=0.27.0
+
+# 配置
+pyyaml>=6.0
+
+# R2 抓取正文（可读性提取）
+trafilatura>=1.9.0
+
+# LLM 调用（DeepSeek 走 OpenAI 兼容接口）
+openai>=1.40.0
+
+# R5 Web 后端
+fastapi
+uvicorn

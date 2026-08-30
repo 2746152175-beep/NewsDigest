@@ -1,0 +1,517 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>新闻智能体</title>
+  <style>
+    :root {
+      --bg: #f4f6f8;
+      --surface: #ffffff;
+      --border: #d9dee3;
+      --text: #1f2933;
+      --muted: #6b7280;
+      --accent: #0f766e;
+      --accent-ink: #ffffff;
+      --amber: #d97706;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    header.topbar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 20px;
+    }
+    .topbar h1 { margin: 0 0 10px; font-size: 20px; }
+    .controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .controls label { font-size: 14px; color: var(--muted); }
+    input, select, button { font: inherit; }
+    input[type=date], input[type=text], input[type=password], select {
+      padding: 7px 9px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: #fff;
+    }
+    button {
+      padding: 7px 14px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: #fff;
+      cursor: pointer;
+    }
+    button.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: var(--accent-ink);
+    }
+    button:disabled { opacity: .55; cursor: not-allowed; }
+    .progress {
+      margin-top: 12px;
+      padding: 10px 12px;
+      background: #f0fdfa;
+      border: 1px solid #b2dfdb;
+      border-radius: 8px;
+    }
+    .progress .stage { font-weight: 600; color: var(--accent); }
+    .progress pre {
+      margin: 8px 0 0;
+      font-size: 12px;
+      color: var(--muted);
+      white-space: pre-wrap;
+      word-break: break-all;
+      max-height: 140px;
+      overflow: auto;
+    }
+    .hidden { display: none !important; }
+    .settings {
+      margin: 0 20px;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .settings h2 { margin: 0 0 12px; font-size: 16px; }
+    .settings form { display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-end; }
+    .settings label { display: flex; flex-direction: column; gap: 5px; font-size: 13px; color: var(--muted); }
+    .settings .msg { font-size: 13px; color: var(--accent); align-self: center; }
+    .settings .range-row { display: flex; align-items: center; gap: 8px; }
+    .settings input[type=range] { width: 180px; }
+    .settings .segments { display: flex; flex-direction: column; gap: 6px; width: 100%; }
+    .settings .segments-title { font-size: 13px; color: var(--muted); }
+    .settings .segment-groups { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+    .settings .segment-group { border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
+    .settings .segment-group summary { cursor: pointer; padding: 8px 10px; font-size: 14px; font-weight: 600; }
+    .settings .segment-group .group-items { display: flex; flex-wrap: wrap; gap: 8px 16px; padding: 8px 10px; }
+    .settings .segment-group .group-items label { flex-direction: row; align-items: center; gap: 6px; font-size: 13px; color: var(--text); }
+    main { padding: 18px 20px 48px; max-width: 980px; margin: 0 auto; }
+    .category h2 {
+      font-size: 16px;
+      margin: 22px 0 10px;
+      padding-left: 8px;
+      border-left: 3px solid var(--accent);
+    }
+    .news-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin-bottom: 12px;
+    }
+    .news-card h3 { margin: 0 0 8px; font-size: 17px; }
+    .meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+    .stars { color: var(--amber); letter-spacing: 1px; }
+    .chip {
+      background: #e6f4f1;
+      color: var(--accent);
+      border-radius: 999px;
+      padding: 2px 9px;
+      font-size: 12px;
+    }
+    .summary { margin: 0 0 10px; }
+    .insight {
+      background: #f8fafc;
+      border-left: 3px solid var(--border);
+      padding: 8px 10px;
+      margin-bottom: 10px;
+      color: #334155;
+      font-size: 14px;
+    }
+    .points { margin: 0 0 10px; padding-left: 20px; }
+    .points li { margin: 2px 0; }
+    .source-link { color: var(--accent); text-decoration: none; font-size: 14px; }
+    .source-link:hover { text-decoration: underline; }
+    .empty { text-align: center; color: var(--muted); padding: 40px 0; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <h1>新闻智能体</h1>
+    <div class="controls">
+      <label for="date">日期</label>
+      <input type="date" id="date">
+      <button id="refreshBtn" class="primary" type="button">刷新</button>
+      <button id="settingsToggle" type="button">设置</button>
+    </div>
+    <div id="progress" class="progress hidden">
+      <span id="stageBadge" class="stage">准备中</span>
+      <pre id="logTail"></pre>
+    </div>
+  </header>
+
+  <section id="settingsPanel" class="settings hidden">
+    <h2>设置</h2>
+    <form id="settingsForm">
+      <label>服务商
+        <select id="provider">
+          <option value="deepseek">DeepSeek</option>
+          <option value="openai">OpenAI</option>
+          <option value="custom">自定义</option>
+        </select>
+      </label>
+      <label>模型
+        <input id="model" list="modelList" type="text" autocomplete="off">
+        <datalist id="modelList">
+          <option value="deepseek-v4-flash"></option>
+          <option value="deepseek-v4-pro"></option>
+          <option value="gpt-4o"></option>
+          <option value="gpt-4.1"></option>
+          <option value="gpt-4.1-mini"></option>
+          <option value="gpt-4o-mini"></option>
+        </datalist>
+      </label>
+      <label>base_url
+        <input id="baseUrl" type="text" autocomplete="off">
+      </label>
+      <label>api_key
+        <input id="apiKey" type="password" autocomplete="off">
+      </label>
+      <label>数量
+        <span class="range-row">
+          <input id="maxItems" type="range" min="10" max="200" step="1" value="60">
+          <span id="maxItemsValue">60</span>
+        </span>
+      </label>
+      <label>重要性阈值
+        <select id="importanceMin">
+          <option value="0">0 = 不过滤</option>
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="5">5</option>
+        </select>
+      </label>
+      <div class="segments">
+        <span class="segments-title">领域</span>
+        <div id="segmentGroups" class="segment-groups"></div>
+      </div>
+      <button type="submit" class="primary">保存</button>
+      <span id="settingsMsg" class="msg"></span>
+    </form>
+  </section>
+
+  <main>
+    <div id="newsList"></div>
+    <div id="emptyState" class="empty hidden">暂无新闻</div>
+  </main>
+
+  <script>
+    const STAGE_LABELS = {
+      'R0': 'R0 采集',
+      'R1': 'R1 分类',
+      'R2': 'R2 概括',
+      'R3': 'R3 归档'
+    };
+
+    let pollTimer = null;
+
+    function formatDate(d) {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return y + '-' + m + '-' + day;
+    }
+
+    function showProgress() {
+      document.getElementById('progress').classList.remove('hidden');
+    }
+
+    function setProgress(text) {
+      showProgress();
+      document.getElementById('stageBadge').textContent = text;
+      document.getElementById('logTail').textContent = '';
+    }
+
+    function updateProgress(data) {
+      const badge = document.getElementById('stageBadge');
+      if (data.running) {
+        badge.textContent = STAGE_LABELS[data.stage] || '准备中';
+      } else if (data.exit_code === 0) {
+        badge.textContent = '完成';
+      } else {
+        badge.textContent = '失败';
+      }
+      const lines = (data.output || '').split('\n').filter(Boolean).slice(-8);
+      document.getElementById('logTail').textContent = lines.join('\n') || '（暂无日志）';
+    }
+
+    function stopPolling() {
+      if (pollTimer) {
+        clearInterval(pollTimer);
+        pollTimer = null;
+      }
+    }
+
+    function stars(n) {
+      const count = Number(n) || 0;
+      const full = Math.max(0, Math.min(5, count));
+      return '★'.repeat(full) + '☆'.repeat(5 - full);
+    }
+
+    function renderItem(it) {
+      const card = document.createElement('article');
+      card.className = 'news-card';
+
+      const title = document.createElement('h3');
+      title.textContent = it.title || '(无标题)';
+      card.appendChild(title);
+
+      const meta = document.createElement('div');
+      meta.className = 'meta';
+
+      const star = document.createElement('span');
+      star.className = 'stars';
+      star.textContent = stars(it.importance);
+      star.title = '重要性 ' + (it.importance ?? 0) + '/5';
+      meta.appendChild(star);
+
+      for (const c of (it.company || [])) {
+        const chip = document.createElement('span');
+        chip.className = 'chip';
+        chip.textContent = c;
+        meta.appendChild(chip);
+      }
+      card.appendChild(meta);
+
+      if (it.summary) {
+        const p = document.createElement('p');
+        p.className = 'summary';
+        p.textContent = it.summary;
+        card.appendChild(p);
+      }
+
+      if (it.insight) {
+        const ins = document.createElement('div');
+        ins.className = 'insight';
+        const label = document.createElement('strong');
+        label.textContent = '产业启示：';
+        ins.appendChild(label);
+        ins.appendChild(document.createTextNode(it.insight));
+        card.appendChild(ins);
+      }
+
+      if (Array.isArray(it.key_points) && it.key_points.length) {
+        const ul = document.createElement('ul');
+        ul.className = 'points';
+        for (const kp of it.key_points) {
+          const li = document.createElement('li');
+          li.textContent = kp;
+          ul.appendChild(li);
+        }
+        card.appendChild(ul);
+      }
+
+      if (it.url) {
+        const link = document.createElement('a');
+        link.className = 'source-link';
+        link.href = it.url;
+        link.textContent = '查看原文';
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        card.appendChild(link);
+      }
+
+      return card;
+    }
+
+    function renderNews(items) {
+      const list = document.getElementById('newsList');
+      const empty = document.getElementById('emptyState');
+      list.innerHTML = '';
+
+      if (!items || items.length === 0) {
+        empty.classList.remove('hidden');
+        return;
+      }
+      empty.classList.add('hidden');
+
+      const groups = new Map();
+      for (const it of items) {
+        const cat = it.category || '未分类';
+        if (!groups.has(cat)) groups.set(cat, []);
+        groups.get(cat).push(it);
+      }
+
+      for (const [cat, arr] of groups) {
+        const section = document.createElement('section');
+        section.className = 'category';
+        const h2 = document.createElement('h2');
+        h2.textContent = cat;
+        section.appendChild(h2);
+        for (const it of arr) section.appendChild(renderItem(it));
+        list.appendChild(section);
+      }
+    }
+
+    async function loadNews(date) {
+      const list = document.getElementById('newsList');
+      const empty = document.getElementById('emptyState');
+      try {
+        const res = await fetch('/api/news?date=' + encodeURIComponent(date));
+        if (!res.ok) throw new Error('load failed');
+        renderNews(await res.json());
+      } catch (err) {
+        list.innerHTML = '';
+        empty.textContent = '加载新闻失败';
+        empty.classList.remove('hidden');
+      }
+    }
+
+    function setSettingsMsg(msg, ok) {
+      const el = document.getElementById('settingsMsg');
+      el.textContent = msg;
+      el.style.color = ok ? 'var(--accent)' : '#b42318';
+    }
+
+    const PROVIDER_BASE_URLS = {
+      deepseek: 'https://api.deepseek.com',
+      openai: 'https://api.openai.com/v1'
+    };
+
+    function setProviderFromBaseUrl(baseUrl) {
+      const provider = document.getElementById('provider');
+      if (baseUrl === 'https://api.deepseek.com') provider.value = 'deepseek';
+      else if (baseUrl === 'https://api.openai.com/v1') provider.value = 'openai';
+      else provider.value = 'custom';
+    }
+
+    function renderSegmentGroups(groups, segments) {
+      const container = document.getElementById('segmentGroups');
+      container.innerHTML = '';
+      const selected = new Set(Array.isArray(segments) ? segments : []);
+      const allChecked = selected.size === 0;
+      for (const [name, segs] of Object.entries(groups || {})) {
+        const details = document.createElement('details');
+        details.className = 'segment-group';
+        details.open = true;
+        const summary = document.createElement('summary');
+        summary.textContent = name;
+        details.appendChild(summary);
+        const items = document.createElement('div');
+        items.className = 'group-items';
+        for (const seg of Array.isArray(segs) ? segs : []) {
+          const label = document.createElement('label');
+          const cb = document.createElement('input');
+          cb.type = 'checkbox';
+          cb.className = 'segment-check';
+          cb.value = seg;
+          cb.checked = allChecked || selected.has(seg);
+          label.appendChild(cb);
+          label.appendChild(document.createTextNode(seg));
+          items.appendChild(label);
+        }
+        details.appendChild(items);
+        container.appendChild(details);
+      }
+    }
+
+    async function loadSettings() {
+      try {
+        const res = await fetch('/api/settings');
+        if (!res.ok) throw new Error('load failed');
+        const data = await res.json();
+        document.getElementById('model').value = data.model;
+        setProviderFromBaseUrl(data.base_url);
+        document.getElementById('baseUrl').value = data.base_url || '';
+        document.getElementById('apiKey').value = data.api_key || '';
+        const maxItems = document.getElementById('maxItems');
+        const maxVal = Number(data.max_items) || 60;
+        maxItems.value = Math.min(200, Math.max(10, maxVal));
+        document.getElementById('maxItemsValue').textContent = maxItems.value;
+        document.getElementById('importanceMin').value = String(data.importance_min ?? 3);
+        renderSegmentGroups(data.groups || {}, data.segments || []);
+      } catch (err) {
+        setSettingsMsg('读取设置失败', false);
+      }
+    }
+
+    function startPolling() {
+      stopPolling();
+      setProgress('运行中…');
+      pollTimer = setInterval(async () => {
+        try {
+          const res = await fetch('/api/status');
+          if (!res.ok) return;
+          const data = await res.json();
+          updateProgress(data);
+          if (!data.running) {
+            stopPolling();
+            document.getElementById('refreshBtn').disabled = false;
+            await loadNews(document.getElementById('date').value);
+          }
+        } catch (err) {
+          // Ignore transient polling errors and keep waiting.
+        }
+      }, 1000);
+    }
+
+    async function refresh() {
+      const btn = document.getElementById('refreshBtn');
+      btn.disabled = true;
+      try {
+        const res = await fetch('/api/refresh', { method: 'POST' });
+        if (res.status === 409) {
+          setProgress('已有任务在运行');
+          btn.disabled = false;
+          return;
+        }
+        if (!res.ok) throw new Error('refresh failed');
+        startPolling();
+      } catch (err) {
+        setProgress('刷新失败');
+        btn.disabled = false;
+      }
+    }
+
+    document.getElementById('refreshBtn').addEventListener('click', refresh);
+    document.getElementById('settingsToggle').addEventListener('click', () => {
+      document.getElementById('settingsPanel').classList.toggle('hidden');
+    });
+    document.getElementById('maxItems').addEventListener('input', (e) => {
+      document.getElementById('maxItemsValue').textContent = e.target.value;
+    });
+    document.getElementById('provider').addEventListener('change', (e) => {
+      const url = PROVIDER_BASE_URLS[e.target.value];
+      if (url) document.getElementById('baseUrl').value = url;
+    });
+    document.getElementById('date').addEventListener('change', (e) => {
+      loadNews(e.target.value);
+    });
+    document.getElementById('settingsForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const checks = [...document.querySelectorAll('#segmentGroups .segment-check')];
+      const checked = checks.filter(c => c.checked).map(c => c.value);
+      const body = {
+        model: document.getElementById('model').value,
+        base_url: document.getElementById('baseUrl').value.trim(),
+        api_key: document.getElementById('apiKey').value,
+        max_items: parseInt(document.getElementById('maxItems').value, 10),
+        importance_min: parseInt(document.getElementById('importanceMin').value, 10),
+        segments: checked.length === checks.length ? [] : checked
+      };
+      try {
+        const res = await fetch('/api/settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        if (!res.ok) throw new Error('save failed');
+        setSettingsMsg('已保存', true);
+      } catch (err) {
+        setSettingsMsg('保存失败', false);
+      }
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const dateInput = document.getElementById('date');
+      dateInput.value = formatDate(new Date());
+      loadSettings();
+      loadNews(dateInput.value);
+    });
+  </script>
+</body>
+</html>

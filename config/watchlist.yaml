@@ -1,0 +1,114 @@
+# ============================================================
+# 观察清单：细分领域 -> 公司列表（全领域科技公司）
+# 公司可出现在多个领域；R1 会去重后平铺成公司清单
+# ============================================================
+watchlist:
+  AI大模型·基础模型:
+    - OpenAI
+    - Anthropic
+    - Google DeepMind
+    - Meta AI
+    - xAI
+    - Perplexity
+  AI应用·Agent:
+    - OpenAI
+    - Anthropic
+    - Microsoft
+    - Perplexity
+    - Scale AI
+  多模态·生成式AI:
+    - OpenAI
+    - Google DeepMind
+    - Meta AI
+    - xAI
+  AI基础设施·工具链:
+    - Scale AI
+    - Databricks
+    - Hugging Face
+  GPU·AI芯片:
+    - NVIDIA
+    - AMD
+    - Intel
+    - Broadcom
+    - Qualcomm
+  先进制程·晶圆:
+    - Intel
+    - Applied Materials
+    - Lam Research
+  存储·HBM:
+    - Micron
+  半导体设备·EDA:
+    - Applied Materials
+    - Lam Research
+  量子计算:
+    - IBM Quantum
+    - Google Quantum
+    - Rigetti
+    - IonQ
+    - Quantinuum
+  云计算·数据中心:
+    - Amazon Web Services
+    - Microsoft Azure
+    - Google Cloud
+    - Oracle
+    - Cloudflare
+  企业软件·SaaS:
+    - Salesforce
+    - Palantir
+    - ServiceNow
+    - MongoDB
+    - Microsoft
+  开发者工具·开源:
+    - GitHub
+    - MongoDB
+    - Databricks
+  网络安全:
+    - CrowdStrike
+    - Palo Alto Networks
+    - Cloudflare
+  数据库·数据:
+    - Snowflake
+    - MongoDB
+    - Databricks
+    - Oracle
+  消费电子:
+    - Apple
+  ARVR·空间计算:
+    - Apple
+    - Meta
+  物联网·智能家居:
+    - Amazon
+    - Apple
+  自动驾驶:
+    - Tesla
+    - Waymo
+  机器人·具身智能:
+    - Boston Dynamics
+    - Figure AI
+    - Tesla Optimus
+    - 1X
+    - Agility Robotics
+  电动车·新能源:
+    - Tesla
+    - Rivian
+    - Lucid
+  储能·电池:
+    - Tesla
+  商业航天·卫星:
+    - SpaceX
+    - Blue Origin
+    - Rocket Lab
+    - Planet Labs
+  生物科技·AI制药:
+    - Moderna
+    - Illumina
+    - Ginkgo Bioworks
+    - Recursion
+  金融科技:
+    - Stripe
+    - Coinbase
+    - Robinhood
+    - Block
+  Web3·加密:
+    - Coinbase
+    - Block

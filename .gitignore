@@ -1,0 +1,13 @@
+# 中间产物与运行状态
+data/
+state/
+logs/
+
+# 密钥
+.env
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/

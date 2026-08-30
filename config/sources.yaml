@@ -1,0 +1,35 @@
+# ============================================================
+# 数据源清单：RSS + Hacker News（轻量聚合策略）
+# ============================================================
+
+# ---- 综合科技媒体 RSS ----
+rss_feeds:
+  - name: TechCrunch
+    url: "https://techcrunch.com/feed/"
+  - name: The Verge
+    url: "https://www.theverge.com/rss/index.xml"
+  - name: Ars Technica
+    url: "https://feeds.arstechnica.com/arstechnica/index"
+  - name: Wired
+    url: "https://www.wired.com/feed/rss"
+  - name: MIT Technology Review
+    url: "https://www.technologyreview.com/feed/"
+
+# ---- Hacker News（技术突破密度高，官方免费 API，无需鉴权）----
+hacker_news:
+  enabled: true
+  topstories_url: "https://hacker-news.firebaseio.com/v0/topstories.json"
+  item_url: "https://hacker-news.firebaseio.com/v0/item/{id}.json"
+  max_items: 50              # 每次抓取条数上限
+  # 可选：按关键词/域名预过滤，减少噪音（留给 R1 的 LLM 筛选兜底）
+  keywords:
+    - AI
+    - LLM
+    - chip
+    - semiconductor
+    - robotics
+    - quantum
+  domains:
+    - openai.com
+    - nvidia.com
+    - anthropic.com
