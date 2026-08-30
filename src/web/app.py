@@ -35,8 +35,13 @@ def root() -> HTMLResponse:
 
 
 @app.post("/api/refresh")
-def refresh() -> dict:
-    task_id = runner.start()
+def refresh(date: str | None = None) -> dict:
+    if date is not None:
+        try:
+            datetime.strptime(date, "%Y-%m-%d")
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail="date must be YYYY-MM-DD") from exc
+    task_id = runner.start(date)
     if task_id is None:
         raise HTTPException(status_code=409, detail="pipeline already running")
     return {"task_id": task_id, "status": "running"}

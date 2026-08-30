@@ -456,8 +456,9 @@
     async function refresh() {
       const btn = document.getElementById('refreshBtn');
       btn.disabled = true;
+      const date = document.getElementById('date').value;
       try {
-        const res = await fetch('/api/refresh', { method: 'POST' });
+        const res = await fetch('/api/refresh?date=' + encodeURIComponent(date), { method: 'POST' });
         if (res.status === 409) {
           setProgress('已有任务在运行');
           btn.disabled = false;

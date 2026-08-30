@@ -29,7 +29,7 @@ class PipelineRunner:
         self._lock = threading.Lock()
         self._task: _Task | None = None
 
-    def start(self) -> str | None:
+    def start(self, date: str | None = None) -> str | None:
         with self._lock:
             if self._task is not None and self._task.proc.poll() is None:
                 return None
@@ -42,8 +42,12 @@ class PipelineRunner:
             env["PYTHONUTF8"] = "1"
             env["PYTHONUNBUFFERED"] = "1"
 
+            cmd = [sys.executable, "-m", "src.scheduler.run"]
+            if date:
+                cmd += ["--date", date]
+
             proc = subprocess.Popen(
-                [sys.executable, "-m", "src.scheduler.run"],
+                cmd,
                 cwd=str(PROJECT_ROOT),
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
