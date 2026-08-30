@@ -5,6 +5,8 @@
 
 [中文](README.zh-CN.md) | **English**
 
+> 📖 New to this? Read the beginner guide (Chinese): [INSTALL.md](INSTALL.md)
+
 > Automatically collect the latest tech company news, classify & summarize it with an LLM, and archive it into your Obsidian vault — to help you analyze industry trends and discover niche opportunities.
 
 ## What it does
