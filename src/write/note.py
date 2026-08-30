@@ -48,7 +48,7 @@ def _segments(item: dict) -> list[str]:
     return [str(s).strip() for s in (item.get("segment") or []) if str(s).strip()]
 
 
-def build_tags(item: dict) -> list[str]:
+def build_tags(item: dict, starred: bool = False) -> list[str]:
     """Flatten category + segments + companies, replacing spaces with dashes."""
     parts: list[str] = []
     category = str(item.get("category") or "").strip()
@@ -64,6 +64,8 @@ def build_tags(item: dict) -> list[str]:
         if tag and tag not in seen:
             seen.add(tag)
             tags.append(tag)
+    if starred and "收藏" not in tags:
+        tags.append("收藏")
     return tags
 
 
@@ -74,7 +76,7 @@ def _importance(item: dict) -> int:
         return 0
 
 
-def build_frontmatter(item: dict, published: str) -> str:
+def build_frontmatter(item: dict, published: str, starred: bool = False) -> str:
     fields = [
         "type: news",
         f"id: {_yaml_str(item.get('id'))}",
@@ -86,8 +88,10 @@ def build_frontmatter(item: dict, published: str) -> str:
         f"url: {_yaml_str(item.get('url'))}",
         f"published: {_yaml_str(published)}",
         f"importance: {_importance(item)}",
-        f"tags: {_yaml_list(build_tags(item))}",
+        f"tags: {_yaml_list(build_tags(item, starred))}",
     ]
+    if starred:
+        fields.append("starred: true")
     return "---\n" + "\n".join(fields) + "\n---"
 
 
@@ -105,8 +109,8 @@ def build_body(item: dict) -> str:
     return "\n".join(parts).rstrip() + "\n"
 
 
-def build_note(item: dict, published: str) -> str:
-    return build_frontmatter(item, published) + "\n\n" + build_body(item)
+def build_note(item: dict, published: str, starred: bool = False) -> str:
+    return build_frontmatter(item, published, starred) + "\n\n" + build_body(item)
 
 
 def base_filename(item: dict, published: str) -> str:
@@ -138,9 +142,9 @@ def company_dir_for(item: dict, company_root: Path) -> Path:
     return company_root / safe_name
 
 
-def write_note(item: dict, published: str, filename: str, company_root: Path) -> Path:
+def write_note(item: dict, published: str, filename: str, company_root: Path, starred: bool = False) -> Path:
     target_dir = company_dir_for(item, company_root)
     target_dir.mkdir(parents=True, exist_ok=True)
     path = target_dir / f"{filename}.md"
-    path.write_text(build_note(item, published), encoding="utf-8")
+    path.write_text(build_note(item, published, starred), encoding="utf-8")
     return path

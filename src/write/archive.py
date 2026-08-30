@@ -12,6 +12,7 @@ from zoneinfo import ZoneInfo
 from src.config_loader import load_config, resolve_path
 from src.scheduler.log import setup_logging
 from src.write.digest import write_digest
+from src.write.favorites import build_favorite_index, load_favorites
 from src.write.index import write_indexes
 from src.write.note import assign_filenames, extract_published, write_note
 
@@ -80,6 +81,8 @@ def main(argv: list[str] | None = None) -> int:
     }
     filenames = assign_filenames(items, published_by_id)
 
+    favorites = load_favorites(config)
+
     written = 0
     for item in items:
         item_id = str(item.get("id") or "")
@@ -87,12 +90,16 @@ def main(argv: list[str] | None = None) -> int:
         if not filename:
             logger.warning("no filename assigned for item %s, skipped", item_id)
             continue
-        path = write_note(item, published_by_id[item_id], filename, company_root)
+        starred = item_id in favorites
+        path = write_note(item, published_by_id[item_id], filename, company_root, starred)
         written += 1
         logger.debug("wrote note %s", path)
 
     digest_path = write_digest(digest_dir, items, filenames, date_str)
     index_paths = write_indexes(index_dir, company_root)
+
+    # 刷新收藏索引
+    (index_dir / "收藏.md").write_text(build_favorite_index(company_root), encoding="utf-8")
 
     logger.info(
         "R3 finished: notes=%d digest=%s indexes=%d",

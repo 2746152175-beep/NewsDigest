@@ -111,6 +111,16 @@
       padding: 2px 9px;
       font-size: 12px;
     }
+    .fav-btn {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 2px 10px;
+      font-size: 13px;
+      cursor: pointer;
+      color: var(--amber);
+    }
+    .fav-btn:hover { background: #fdf6ec; }
     .summary { margin: 0 0 10px; }
     .insight {
       background: #f8fafc;
@@ -132,7 +142,7 @@
     <h1>新闻智能体</h1>
     <div class="controls">
       <label for="date">日期</label>
-      <input type="date" id="date">
+      <select id="date"></select>
       <button id="refreshBtn" class="primary" type="button">刷新</button>
       <button id="settingsToggle" type="button">设置</button>
     </div>
@@ -278,6 +288,15 @@
         chip.textContent = c;
         meta.appendChild(chip);
       }
+
+      const favBtn = document.createElement('button');
+      favBtn.className = 'fav-btn';
+      favBtn.type = 'button';
+      favBtn.textContent = it.starred ? '★ 已收藏' : '☆ 收藏';
+      favBtn.title = it.starred ? '取消收藏' : '收藏';
+      favBtn.addEventListener('click', () => toggleFavorite(it, favBtn));
+      meta.appendChild(favBtn);
+
       card.appendChild(meta);
 
       if (it.summary) {
@@ -319,6 +338,23 @@
       }
 
       return card;
+    }
+
+    async function toggleFavorite(it, btn) {
+      const starred = !it.starred;
+      try {
+        const res = await fetch('/api/favorite', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: it.id, starred: starred })
+        });
+        if (!res.ok) throw new Error('favorite failed');
+        it.starred = starred;
+        btn.textContent = starred ? '★ 已收藏' : '☆ 收藏';
+        btn.title = starred ? '取消收藏' : '收藏';
+      } catch (err) {
+        // 简单处理：失败不打断
+      }
     }
 
     function renderNews(items) {
@@ -512,13 +548,32 @@
       }
     });
 
+    async function loadDates() {
+      try {
+        const res = await fetch('/api/dates');
+        if (!res.ok) return;
+        const dates = await res.json();
+        const sel = document.getElementById('date');
+        sel.innerHTML = '';
+        for (const d of dates) {
+          const opt = document.createElement('option');
+          opt.value = d;
+          opt.textContent = d;
+          sel.appendChild(opt);
+        }
+        if (dates.length) {
+          const y = new Date();
+          y.setDate(y.getDate() - 1);
+          const yesterday = formatDate(y);
+          sel.value = dates.includes(yesterday) ? yesterday : dates[0];
+          loadNews(sel.value);
+        }
+      } catch (err) {}
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
-      const dateInput = document.getElementById('date');
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
-      dateInput.value = formatDate(yesterday);
+      loadDates();
       loadSettings();
-      loadNews(dateInput.value);
     });
   </script>
 </body>
