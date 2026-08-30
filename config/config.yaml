@@ -9,7 +9,7 @@ project:
 # Obsidian 仓库写入路径（关键：换 vault 只改这里一处）
 # ------------------------------------------------------------
 vault:
-  news_dir: "改成你的Obsidian仓库路径"   # ⚠️ 必填：改成你自己的 Obsidian 仓库绝对路径
+  news_dir: "改成你的Obsidian仓库路径"   # 记忆库根目录（本地真实路径）
   index_dir: "00-索引"                    # MOC 索引
   company_dir: "01-公司"                  # 按公司归档
   digest_dir: "02-每日简报"               # 每日简报
@@ -53,9 +53,9 @@ filter:
 # 中间产物目录（调试用，可随时清空）
 # ------------------------------------------------------------
 data:
-  raw_dir: "data/raw"               # R0 归一化原始 JSON
-  classified_dir: "data/classified" # R1 分类结果 JSON
-  summarized_dir: "data/summarized" # R2 概括结果 JSON
+  raw_dir: "新闻数据/raw"               # R0 归一化原始 JSON
+  classified_dir: "新闻数据/classified" # R1 分类结果 JSON
+  summarized_dir: "新闻数据/summarized" # R2 概括结果 JSON
   retention_days: 7                 # 中间数据保留天数，超过自动清理
 
 # ------------------------------------------------------------
