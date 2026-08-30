@@ -38,6 +38,7 @@ def read_settings() -> dict:
         "segments": list(filter_cfg.get("segments") or []),
         "all_segments": list(taxonomy.get("segments") or []),
         "groups": dict(taxonomy.get("groups") or {}),
+        "vault_news_dir": str((config.get("vault") or {}).get("news_dir") or ""),
     }
 
 
@@ -76,6 +77,7 @@ def _write_config(
     max_items: int | None = None,
     importance_min: int | None = None,
     segments: list[str] | None = None,
+    vault_news_dir: str | None = None,
 ) -> None:
     lines = CONFIG_PATH.read_text(encoding="utf-8").splitlines(keepends=True)
     lines = _replace_yaml_key(lines, "model", _yaml_value(model))
@@ -86,6 +88,8 @@ def _write_config(
         lines = _replace_yaml_key(lines, "importance_min", _yaml_value(importance_min))
     if segments is not None:
         lines = _replace_yaml_key(lines, "segments", _yaml_value(segments))
+    if vault_news_dir is not None:
+        lines = _replace_yaml_key(lines, "news_dir", _yaml_value(vault_news_dir))
     CONFIG_PATH.write_text("".join(lines), encoding="utf-8")
 
 
@@ -111,6 +115,7 @@ def write_settings(
     max_items: int | None = None,
     importance_min: int | None = None,
     segments: list[str] | None = None,
+    vault_news_dir: str | None = None,
 ) -> None:
-    _write_config(model, base_url, max_items, importance_min, segments)
+    _write_config(model, base_url, max_items, importance_min, segments, vault_news_dir)
     _write_env(api_key)

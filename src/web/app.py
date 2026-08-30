@@ -24,6 +24,7 @@ class SettingsBody(BaseModel):
     max_items: int | None = None
     importance_min: int | None = None
     segments: list[str] | None = None
+    vault_news_dir: str | None = None
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -83,6 +84,7 @@ def post_settings(body: SettingsBody) -> dict:
         max_items=body.max_items,
         importance_min=body.importance_min,
         segments=body.segments,
+        vault_news_dir=body.vault_news_dir,
     )
     return web_settings.read_settings()
 

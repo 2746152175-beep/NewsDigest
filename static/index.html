@@ -169,6 +169,9 @@
       <label>api_key
         <input id="apiKey" type="password" autocomplete="off">
       </label>
+      <label>Obsidian 路径
+        <input id="vaultNewsDir" type="text" autocomplete="off" placeholder="D:/我的知识库/新闻记忆库">
+      </label>
       <label>数量
         <span class="range-row">
           <input id="maxItems" type="range" min="10" max="200" step="1" value="60">
@@ -418,6 +421,7 @@
         setProviderFromBaseUrl(data.base_url);
         document.getElementById('baseUrl').value = data.base_url || '';
         document.getElementById('apiKey').value = data.api_key || '';
+        document.getElementById('vaultNewsDir').value = data.vault_news_dir || '';
         const maxItems = document.getElementById('maxItems');
         const maxVal = Number(data.max_items) || 60;
         maxItems.value = Math.min(200, Math.max(10, maxVal));
@@ -489,6 +493,7 @@
         model: document.getElementById('model').value,
         base_url: document.getElementById('baseUrl').value.trim(),
         api_key: document.getElementById('apiKey').value,
+        vault_news_dir: document.getElementById('vaultNewsDir').value.trim(),
         max_items: parseInt(document.getElementById('maxItems').value, 10),
         importance_min: parseInt(document.getElementById('importanceMin').value, 10),
         segments: checked.length === checks.length ? [] : checked
