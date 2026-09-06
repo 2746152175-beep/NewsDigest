@@ -14,7 +14,7 @@ from src.scheduler.log import setup_logging
 from src.write.digest import write_digest
 from src.write.favorites import build_favorite_index, load_favorites
 from src.write.index import write_indexes
-from src.write.note import assign_filenames, extract_published, write_note
+from src.write.note import assign_filenames, write_note
 
 logger = logging.getLogger(__name__)
 
@@ -75,10 +75,7 @@ def main(argv: list[str] | None = None) -> int:
     for directory in (company_root, digest_dir, index_dir, archive_dir):
         directory.mkdir(parents=True, exist_ok=True)
 
-    published_by_id = {
-        str(item.get("id") or ""): extract_published(item.get("published_at"), date_str)
-        for item in items
-    }
+    published_by_id = {str(item.get("id") or ""): date_str for item in items}
     filenames = assign_filenames(items, published_by_id)
 
     favorites = load_favorites(config)
