@@ -18,7 +18,8 @@ def load_vocab(watchlist: dict, taxonomy: dict) -> dict:
                 companies.append(name)
     categories = [str(c).strip() for c in (taxonomy.get("categories") or []) if str(c).strip()]
     segments = [str(s).strip() for s in (taxonomy.get("segments") or []) if str(s).strip()]
-    return {"companies": companies, "categories": categories, "segments": segments}
+    keywords = [str(k).strip() for k in (taxonomy.get("important_keywords") or []) if str(k).strip()]
+    return {"companies": companies, "categories": categories, "segments": segments, "keywords": keywords}
 
 
 def build_system_prompt(vocab: dict) -> str:
@@ -26,12 +27,15 @@ def build_system_prompt(vocab: dict) -> str:
     companies = "、".join(vocab["companies"]) or "(无)"
     categories = "、".join(vocab["categories"]) or "(无)"
     segments = "、".join(vocab["segments"]) or "(无)"
+    keywords = "、".join(vocab.get("keywords") or []) or "(无)"
     return (
         "你是一名科技新闻分析师，专注于美国优秀科技公司的重要消息、技术突破与产业动态。\n"
         "请对每条新闻做相关性判断并归类。\n\n"
         "分类规则：\n"
         "- relevant：是否属于美国优秀科技公司的重要消息（技术/产品/战略/融资/监管/行业趋势/人才/财报等）。"
         "纯八卦、娱乐、社媒口水、纯招聘、重复营销、与科技公司无关的内容判为 false。\n"
+        f"- 特别规则：若标题涉及这些重要模型/产品关键词（{keywords}），即使来源存疑（如非官方域名），"
+        "也不要判 relevant=false；应判 relevant=true、importance 至少 4，并在 reason 里注明「来源存疑·待核实」。\n"
         "- company：从观察清单中选出涉及的公司，可多个；若不在清单但明显是重要科技公司，可填具体公司名；不相关则留空数组 []。\n"
         "- category：必须且只能从给定 categories 中单选一个，不能自造。\n"
         "- segment：从给定 segments 中多选，可多个，不能自造。\n"

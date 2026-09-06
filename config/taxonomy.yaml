@@ -75,3 +75,17 @@ groups:
     - 生物科技·AI制药
     - 金融科技
     - Web3·加密
+
+# 重要模型/产品关键词（标题涉及这些时，即使来源存疑也判相关、标待核实）
+important_keywords:
+  - GPT-6
+  - GPT-5
+  - GPT-4
+  - Claude
+  - Gemini
+  - DeepSeek
+  - Llama
+  - Mistral
+  - Grok
+  - Sora
+  - Midjourney
