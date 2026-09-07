@@ -61,6 +61,24 @@ def main(argv=None) -> int:
         print(f"[R1] error: raw file is empty or not a list: {raw_path}")
         return 1
 
+    # 幂等增量：读已有分类结果，只分类新增条目
+    _classified_path = classified_dir / f"{date_str}.json"
+    existing: list[dict] = []
+    if _classified_path.exists():
+        try:
+            with open(_classified_path, "r", encoding="utf-8") as fh:
+                existing = json.load(fh)
+        except (OSError, ValueError):
+            existing = []
+    if not isinstance(existing, list):
+        existing = []
+    existing_ids = {str(it.get("id") or "") for it in existing if isinstance(it, dict) and it.get("id")}
+    new_items = [it for it in items if str(it.get("id") or "") not in existing_ids]
+    if not new_items:
+        logger.info("no new items to classify for %s", date_str)
+        print("[R1] no new items to classify, skip")
+        return 0
+
     vocab = load_vocab(watchlist, taxonomy)
     configured_batch = int((config.get("classify") or {}).get("batch_size", 25))
     batch_size = args.batch_size or configured_batch
@@ -68,7 +86,7 @@ def main(argv=None) -> int:
     out: list[dict] = []
     ok_count = 0
     missing_items: list[tuple[int, dict]] = []
-    for batch in _chunks(items, batch_size):
+    for batch in _chunks(new_items, batch_size):
         try:
             results = classify_batch(batch, config, vocab)
         except Exception as exc:
@@ -86,10 +104,10 @@ def main(argv=None) -> int:
                 ok_count += 1
                 out.append({**item, **record})
 
-    in_ids = [it.get("id") for it in items]
+    in_ids = [it.get("id") for it in new_items]
     out_ids = [rec.get("id") for rec in out]
     aligned = (
-        len(out) == len(items)
+        len(out) == len(new_items)
         and len(set(out_ids)) == len(out_ids)
         and set(out_ids) == set(in_ids)
     )
@@ -122,19 +140,25 @@ def main(argv=None) -> int:
         else:
             logger.info("secondary reclassification recovered all missing ids")
 
-    if items and ok_count == 0:
+    if new_items and ok_count == 0:
         logger.error("no batch was successfully classified; aborting without writing output")
         print("[R1] error: 没有任何批次分类成功，未写出输出（请检查 API key / 模型名 / 端点）")
         return 1
 
+    # 合并：已分类的保留，新增的追加，按 raw 顺序输出
+    merged_by_id = {str(it.get("id") or ""): it for it in existing if isinstance(it, dict) and it.get("id")}
+    for rec in out:
+        merged_by_id[str(rec.get("id") or "")] = rec
+    merged = [merged_by_id[str(it.get("id") or "")] for it in items if str(it.get("id") or "") in merged_by_id]
+
     out_path = classified_dir / f"{date_str}.json"
     with open(out_path, "w", encoding="utf-8") as fh:
-        json.dump(out, fh, ensure_ascii=False, indent=2)
+        json.dump(merged, fh, ensure_ascii=False, indent=2)
 
-    total = len(out)
-    relevant = sum(1 for r in out if r.get("relevant"))
+    total = len(merged)
+    relevant = sum(1 for r in merged if r.get("relevant"))
     irrelevant = total - relevant
-    category_counter = Counter(r.get("category", "") for r in out)
+    category_counter = Counter(r.get("category", "") for r in merged)
     category_counts = ", ".join(f"{k}={v}" for k, v in sorted(category_counter.items()))
 
     logger.info(

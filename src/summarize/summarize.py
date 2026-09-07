@@ -254,15 +254,22 @@ def main(argv=None) -> int:
 
     relevant = _filter_relevant(items, config)
 
-    if not relevant:
-        summarized_dir.mkdir(parents=True, exist_ok=True)
-        out_path = summarized_dir / f"{date_str}.json"
-        with open(out_path, "w", encoding="utf-8") as fh:
-            json.dump([], fh, ensure_ascii=False, indent=2)
-        print("[R2] relevant: 0")
-        print("[R2] body fetched: 0")
-        print("[R2] summarized: 0")
-        print(f"[R2] output: {out_path}")
+    # 幂等增量：读已有概括结果，只概括新增的相关条目
+    _summarized_path = summarized_dir / f"{date_str}.json"
+    existing: list[dict] = []
+    if _summarized_path.exists():
+        try:
+            existing = json.loads(_summarized_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            existing = []
+    if not isinstance(existing, list):
+        existing = []
+    existing_ids = {str(it.get("id") or "") for it in existing if isinstance(it, dict) and it.get("id")}
+    new_relevant = [it for it in relevant if str(it.get("id") or "") not in existing_ids]
+
+    if not new_relevant:
+        logger.info("no new relevant items to summarize for %s", date_str)
+        print("[R2] no new relevant items to summarize, skip")
         return 0
 
     try:
@@ -272,10 +279,10 @@ def main(argv=None) -> int:
         print(f"[R2] error: LLM client init failed: {exc}")
         return 1
 
-    item_by_id = {it["id"]: it for it in relevant}
+    item_by_id = {it["id"]: it for it in new_relevant}
     prepared: list[dict] = []
     body_ok_count = 0
-    for it in relevant:
+    for it in new_relevant:
         body = fetch_body(it.get("url") or "")
         if body:
             body_ok_count += 1
@@ -308,10 +315,10 @@ def main(argv=None) -> int:
                 }
             )
 
-    in_ids = [it.get("id") for it in relevant]
+    in_ids = [it.get("id") for it in new_relevant]
     out_ids = [rec.get("id") for rec in out]
     aligned = (
-        len(out) == len(relevant)
+        len(out) == len(new_relevant)
         and len(set(out_ids)) == len(out_ids)
         and set(out_ids) == set(in_ids)
     )
@@ -325,10 +332,16 @@ def main(argv=None) -> int:
         print("[R2] error: 没有任何条目概括成功，未写出输出（请检查 API key / 模型名 / 端点）")
         return 1
 
+    # 合并：已概括的保留，新增的追加，按 relevant 顺序输出
+    merged_by_id = {str(it.get("id") or ""): it for it in existing if isinstance(it, dict) and it.get("id")}
+    for rec in out:
+        merged_by_id[str(rec.get("id") or "")] = rec
+    merged = [merged_by_id[str(it.get("id") or "")] for it in relevant if str(it.get("id") or "") in merged_by_id]
+
     summarized_dir.mkdir(parents=True, exist_ok=True)
     out_path = summarized_dir / f"{date_str}.json"
     with open(out_path, "w", encoding="utf-8") as fh:
-        json.dump(out, fh, ensure_ascii=False, indent=2)
+        json.dump(merged, fh, ensure_ascii=False, indent=2)
 
     logger.info(
         "R2 finished: relevant=%d body_ok=%d summarized=%d file=%s",
